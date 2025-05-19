@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Usuários</title>
+    <style>
+        body { font-family: Arial; margin: 0; }
+        .container { margin: 32px; }
+        .card { border: 1px solid #ccc; padding: 12px; margin: 8px 0; border-radius: 6px; }
+        .card button { margin-left: 8px; }
+        form { margin-bottom: 24px; }
+        nav {
+            background: #111;
+            padding: 12px 24px;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-right: 24px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Início</a>
+        <a href="/produtos">Produtos</a>
+        <a href="/usuarios">Usuários</a>
+        <a href="/pedidos">Pedidos</a>
+    </nav>
+    <div class="container">
+        <h1>Cadastro de Usuário</h1>
+        <form id="form-usuario">
+            <input type="hidden" id="usuario-id" />
+            <input type="text" id="nome" placeholder="Nome" required />
+            <input type="email" id="email" placeholder="E-mail" required />
+            <button type="submit">Salvar</button>
+        </form>
+        <h2>Usuários cadastrados</h2>
+        <div id="usuarios"></div>
+    </div>
+    <script>
+        async function carregarUsuarios() {
+            const resp = await fetch('/usuarios', { headers: { Accept: 'application/json' } });
+            const usuarios = await resp.json();
+            const div = document.getElementById('usuarios');
+            div.innerHTML = '';
+            usuarios.forEach((user) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <b>${user.nome}</b> - ${user.email}
+                    <button onclick="editar('${user._id}', '${user.nome}', '${user.email}')">Editar</button>
+                    <button onclick="excluir('${user._id}')">Excluir</button>
+                `;
+                div.appendChild(card);
+            });
+        }
+        carregarUsuarios();
+
+        document.getElementById('form-usuario').onsubmit = async function (e) {
+            e.preventDefault();
+            const id = document.getElementById('usuario-id').value;
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const metodo = id ? 'PUT' : 'POST';
+            const url = id ? `/usuarios/${id}` : '/usuarios';
+            await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, email }),
+            });
+            document.getElementById('form-usuario').reset();
+            document.getElementById('usuario-id').value = '';
+            carregarUsuarios();
+        };
+
+        window.editar = function (id, nome, email) {
+            document.getElementById('usuario-id').value = id;
+            document.getElementById('nome').value = nome;
+            document.getElementById('email').value = email;
+        };
+
+        window.excluir = async function (id) {
+            await fetch(`/usuarios/${id}`, { method: 'DELETE' });
+            carregarUsuarios();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pedidos</title>
+    <style>
+        body { font-family: Arial; margin: 0; }
+        .card { border: 1px solid #ccc; padding: 12px; margin: 8px 0; border-radius: 6px; }
+        .card button { margin-left: 8px; }
+        form { margin-bottom: 24px; }
+        textarea { vertical-align: middle; }
+        nav {
+            background: #111;
+            padding: 12px 24px;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-right: 24px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .container { margin: 32px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Início</a>
+        <a href="/produtos">Produtos</a>
+        <a href="/usuarios">Usuários</a>
+        <a href="/pedidos">Pedidos</a>
+    </nav>
+    <div class="container">
+        <h1>Cadastro de Pedido</h1>
+        <form id="form-pedido">
+            <input type="hidden" id="pedido-id" />
+            <select id="usuario" required>
+                <option value="">Selecione o usuário</option>
+            </select>
+            <select id="produto" required>
+                <option value="">Selecione o produto</option>
+            </select>
+            <input type="number" id="quantidade" placeholder="Quantidade" min="1" value="1" required />
+            <button type="submit">Salvar</button>
+        </form>
+        <h2>Pedidos cadastrados</h2>
+        <div id="pedidos"></div>
+    </div>
+    <script>
+        let usuariosMap = {};
+        let produtosMap = {};
+
+        // Carregar usuários e produtos nos selects e criar mapas para consulta rápida
+        async function carregarUsuariosEProdutos() {
+            // Usuários
+            const respUsuarios = await fetch('/usuarios', { headers: { Accept: 'application/json' } });
+            const usuarios = await respUsuarios.json();
+            usuariosMap = {};
+            const selectUsuario = document.getElementById('usuario');
+            selectUsuario.innerHTML = '<option value="">Selecione o usuário</option>';
+            usuarios.forEach(u => {
+                usuariosMap[u._id] = u;
+                const opt = document.createElement('option');
+                opt.value = u._id;
+                opt.textContent = `${u.nome} (${u.email})`;
+                selectUsuario.appendChild(opt);
+            });
+
+            // Produtos
+            const respProdutos = await fetch('/produtos', { headers: { Accept: 'application/json' } });
+            const produtos = await respProdutos.json();
+            produtosMap = {};
+            const selectProduto = document.getElementById('produto');
+            selectProduto.innerHTML = '<option value="">Selecione o produto</option>';
+            produtos.forEach(p => {
+                produtosMap[p._id] = p;
+                const opt = document.createElement('option');
+                opt.value = p._id;
+                opt.textContent = `${p.nome} - R$ ${p.preco}`;
+                selectProduto.appendChild(opt);
+            });
+        }
+
+        // Carregar pedidos
+        async function carregarPedidos() {
+            const resp = await fetch('/pedidos', { headers: { Accept: 'application/json' } });
+            const pedidos = await resp.json();
+            const div = document.getElementById('pedidos');
+            div.innerHTML = '';
+            pedidos.forEach((pedido) => {
+                const usuario = usuariosMap[pedido.idUsuario] || { nome: 'Desconhecido', email: '' };
+                const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+                const itensStr = itens.map(i => {
+                    const prod = produtosMap[i.produtoId] || { nome: 'Desconhecido', preco: '' };
+                    return `Produto: ${prod.nome} (R$ ${prod.preco}) - Qtd: ${i.quantidade}`;
+                }).join('<br>');
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <b>Usuário:</b> ${usuario.nome} (${usuario.email}) <br>
+                    <b>Itens:</b><br> ${itensStr}
+                    <br>
+                    <button onclick="editar('${pedido._id}', '${pedido.idUsuario}', '${itens.length ? itens[0].produtoId : ''}', '${itens.length ? itens[0].quantidade : 1}')">Editar</button>
+                    <button onclick="excluir('${pedido._id}')">Excluir</button>
+                `;
+                div.appendChild(card);
+            });
+        }
+
+        // Inicialização
+        async function inicializar() {
+            await carregarUsuariosEProdutos();
+            await carregarPedidos();
+        }
+        inicializar();
+
+        // Cadastro/edição de pedido
+        document.getElementById('form-pedido').onsubmit = async function (e) {
+            e.preventDefault();
+            const id = document.getElementById('pedido-id').value;
+            const idUsuario = document.getElementById('usuario').value;
+            const produtoId = document.getElementById('produto').value;
+            const quantidade = parseInt(document.getElementById('quantidade').value, 10);
+
+            // O campo itens será um array de objetos { produtoId, quantidade }
+            const itens = [{ produtoId, quantidade }];
+
+            const metodo = id ? 'PUT' : 'POST';
+            const url = id ? `/pedidos/${id}` : '/pedidos';
+            await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idUsuario, itens }),
+            });
+            document.getElementById('form-pedido').reset();
+            document.getElementById('pedido-id').value = '';
+            await carregarPedidos();
+        };
+
+        // Editar pedido
+        window.editar = function (id, idUsuario, produtoId, quantidade) {
+            document.getElementById('pedido-id').value = id;
+            document.getElementById('usuario').value = idUsuario;
+            document.getElementById('produto').value = produtoId;
+            document.getElementById('quantidade').value = quantidade;
+        };
+
+        // Excluir pedido
+        window.excluir = async function (id) {
+            await fetch(`/pedidos/${id}`, { method: 'DELETE' });
+            await carregarPedidos();
+        };
+    </script>
+</body>
+</html>
