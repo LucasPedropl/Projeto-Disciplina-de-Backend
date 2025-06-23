@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {{> header title="Pedidos" }}
+</head>
+<body>
+    {{> nav }}
+    <div class="container">
+        <h1>Cadastro de Pedido</h1>
+        <form id="form-pedido" method="POST" action="/pedidos{{#if editar}}/editar/{{pedido._id}}{{/if}}">
+            <input type="hidden" name="pedido-id" value="{{pedido._id}}" />
+            <select name="idUsuario" required>
+                <option value="">Selecione o usuário</option>
+                {{#each usuarios}}
+                    <option value="{{this._id}}" {{#ifCond this._id ../pedido.idUsuario}}selected{{/ifCond}}>
+                        {{this.nome}} ({{this.email}})
+                    </option>
+                {{/each}}
+            </select>
+            <select name="produtoId" required>
+                <option value="">Selecione o produto</option>
+                {{#each produtos}}
+                    <option value="{{this._id}}">
+                        {{this.nome}} - R$ {{this.preco}}
+                    </option>
+                {{/each}}
+            </select>
+            <input type="number" name="quantidade" placeholder="Quantidade" min="1" value="1" required />
+            <button type="submit">{{#if editar}}Atualizar{{else}}Salvar{{/if}}</button>
+        </form>
+        <h2>Pedidos cadastrados</h2>
+        <div id="pedidos">
+            {{#each pedidos}}
+                <div class="card">
+                    <b>ID:</b> {{this._id}}<br>
+                    <b>Usuário:</b> {{this.idUsuario}}<br>
+                    <b>Itens:</b>
+                    <ul>
+                        {{#each this.itens}}
+                            <li>Produto: {{this.produtoId}} - Quantidade: {{this.quantidade}}</li>
+                        {{/each}}
+                    </ul>
+                    <form method="GET" action="/pedidos/editar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Editar</button>
+                    </form>
+                    <form method="POST" action="/pedidos/deletar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Excluir</button>
+                    </form>
+                </div>
+            {{else}}
+                <p>Nenhum pedido cadastrado.</p>
+            {{/each}}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {{> header title="Produtos" }}
+</head>
+<body>
+    {{> nav }}
+    <div class="container">
+        <h1>Cadastro de Produto</h1>
+        <form id="form-produto" method="POST" action="/produtos{{#if editar}}/editar/{{produto._id}}{{/if}}">
+            <input type="hidden" name="produto-id" value="{{produto._id}}" />
+            <input type="text" name="nome" placeholder="Nome" value="{{produto.nome}}" required />
+            <input type="number" name="preco" placeholder="Preço" step="0.01" value="{{produto.preco}}" required />
+            <button type="submit">{{#if editar}}Atualizar{{else}}Salvar{{/if}}</button>
+        </form>
+        <h2>Produtos cadastrados</h2>
+        <div id="produtos">
+            {{#each produtos}}
+                <div class="card">
+                    <b>ID:</b> {{this._id}}<br>
+                    <b>Nome:</b> {{this.nome}}<br>
+                    <b>Preço:</b> R$ {{this.preco}}<br>
+                    <form method="GET" action="/produtos/editar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Editar</button>
+                    </form>
+                    <form method="POST" action="/produtos/deletar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Excluir</button>
+                    </form>
+                </div>
+            {{else}}
+                <p>Nenhum produto cadastrado.</p>
+            {{/each}}
+        </div>
+    </div>
+</body>
+</html>

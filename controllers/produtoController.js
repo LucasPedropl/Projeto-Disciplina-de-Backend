@@ -1,75 +1,84 @@
-const { ObjectId } = require('mongodb');
-const { criarProduto } = require('../models/produto');
-const { conectar } = require('../db/db');
-const { logErro } = require('../utils/logger');
+import { ObjectId } from 'mongodb';
+import { criarProduto } from '../models/produto.js';
+import conectar from '../db/db.js';
+import { logErro } from '../utils/logger.js';
 
-function validarProduto(data) {
-    return data.nome && typeof data.preco === 'number' && !isNaN(data.preco);
+class ProdutoController {
+	validarProduto(data) {
+		return (
+			data.nome && typeof data.preco === 'number' && !isNaN(data.preco)
+		);
+	}
+
+	async listar(req, res) {
+		try {
+			const db = await conectar();
+			const produtos = await db
+				.collection('produtos')
+				.find({ adminId: req.adminId })
+				.toArray();
+			res.render('produtos.hbs', { produtos });
+		} catch (erro) {
+			logErro(erro);
+			res.status(500).send('Erro ao listar produtos');
+		}
+	}
+
+	async criar(req, res) {
+		try {
+			const db = await conectar();
+			const { nome, preco } = req.body;
+			if (!this.validarProduto({ nome, preco: Number(preco) })) {
+				return res.status(400).send('Dados inválidos');
+			}
+			const produto = criarProduto({ nome, preco: Number(preco) });
+			produto.adminId = req.adminId;
+			await db.collection('produtos').insertOne(produto);
+			res.redirect('/produtos');
+		} catch (erro) {
+			logErro(erro);
+			res.status(500).send('Erro ao criar produto');
+		}
+	}
+
+	async editar(req, res) {
+		const db = await conectar();
+		const id = req.params.id;
+		const produto = await db
+			.collection('produtos')
+			.findOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+		if (!produto) return res.status(404).send('Produto não encontrado');
+		res.render('produtos.hbs', { editar: true, produto });
+	}
+
+	async atualizar(req, res) {
+		const db = await conectar();
+		const id = req.params.id;
+		const { nome, preco } = req.body;
+		if (!this.validarProduto({ nome, preco: Number(preco) })) {
+			return res.status(400).send('Dados inválidos');
+		}
+		const result = await db.collection('produtos').updateOne(
+			{ _id: new ObjectId(id), adminId: req.adminId }, // ajuste
+			{ $set: { nome, preco: Number(preco) } }
+		);
+		if (result.matchedCount === 0) {
+			return res.status(404).send('Produto não encontrado');
+		}
+		res.redirect('/produtos');
+	}
+
+	async remover(req, res) {
+		const db = await conectar();
+		const id = req.params.id;
+		const result = await db
+			.collection('produtos')
+			.deleteOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+		if (result.deletedCount === 0) {
+			return res.status(404).send('Produto não encontrado');
+		}
+		res.redirect('/produtos');
+	}
 }
 
-async function listar(req, res, enviarJSON) {
-    try {
-        const db = await conectar();
-        const lista = await db.collection('produtos').find().toArray();
-        enviarJSON(res, 200, lista);
-    } catch (erro) {
-        logErro(erro);
-        enviarJSON(res, 500, { erro: 'Erro ao listar produtos' });
-    }
-}
-
-async function buscar(req, res, enviarJSON, id) {
-    try {
-        const db = await conectar();
-        const doc = await db.collection('produtos').findOne({ _id: new ObjectId(id) });
-        enviarJSON(res, doc ? 200 : 404, doc || { erro: 'Não encontrado' });
-    } catch (erro) {
-        logErro(erro);
-        enviarJSON(res, 500, { erro: 'Erro ao buscar produto' });
-    }
-}
-
-async function criar(req, res, enviarJSON, lerCorpo) {
-    try {
-        const db = await conectar();
-        const corpo = await lerCorpo(req);
-        if (!validarProduto(corpo)) {
-            return enviarJSON(res, 400, { erro: 'Nome e preço numérico são obrigatórios' });
-        }
-        const produto = criarProduto(corpo);
-        const resultado = await db.collection('produtos').insertOne(produto);
-        const novoProduto = await db.collection('produtos').findOne({ _id: resultado.insertedId });
-        enviarJSON(res, 201, novoProduto);
-    } catch (erro) {
-        logErro(erro);
-        enviarJSON(res, 500, { erro: 'Erro ao criar produto' });
-    }
-}
-
-async function atualizar(req, res, enviarJSON, lerCorpo, id) {
-    try {
-        const db = await conectar();
-        const atualizacao = await lerCorpo(req);
-        if (!validarProduto(atualizacao)) {
-            return enviarJSON(res, 400, { erro: 'Nome e preço numérico são obrigatórios' });
-        }
-        const resultado = await db.collection('produtos').updateOne({ _id: new ObjectId(id) }, { $set: atualizacao });
-        enviarJSON(res, resultado.matchedCount ? 200 : 404, resultado.matchedCount ? { atualizado: id } : { erro: 'Não encontrado' });
-    } catch (erro) {
-        logErro(erro);
-        enviarJSON(res, 500, { erro: 'Erro ao atualizar produto' });
-    }
-}
-
-async function remover(req, res, enviarJSON, id) {
-    try {
-        const db = await conectar();
-        const resultado = await db.collection('produtos').deleteOne({ _id: new ObjectId(id) });
-        enviarJSON(res, resultado.deletedCount ? 200 : 404, resultado.deletedCount ? { deletado: id } : { erro: 'Não encontrado' });
-    } catch (erro) {
-        logErro(erro);
-        enviarJSON(res, 500, { erro: 'Erro ao remover produto' });
-    }
-}
-
-module.exports = { listar, buscar, criar, atualizar, remover };
+export default new ProdutoController();

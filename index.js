@@ -1,71 +1,38 @@
-const http = require('http');
-const usuarioController = require('./controllers/usuarioController');
-const produtoController = require('./controllers/produtoController');
-const pedidoController = require('./controllers/pedidoController');
-const rotas = require('./routes/routes');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import hbs from 'hbs';
+import db from './db/db.js';
+import routes from './routes/routes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import { logErro } from './utils/logger.js';
+import cookieParser from 'cookie-parser';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-function lerCorpo(req) {
-	return new Promise((resolve, reject) => {
-		let dados = '';
-		req.on('data', (parte) => (dados += parte));
-		req.on('end', () => {
-			try {
-				resolve(dados ? JSON.parse(dados) : {});
-			} catch (erro) {
-				reject(erro);
-			}
-		});
-	});
-}
+const app = express();
+const port = 3000;
 
-function enviarJSON(res, status, conteudo) {
-	const json = JSON.stringify(conteudo);
-	res.writeHead(status, { 'Content-Type': 'application/json' });
-	res.end(json);
-}
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'hbs');
 
-const servidor = http.createServer(async (req, res) => {
-	if (rotas(req, res)) return;
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cookieParser());
+app.use('/', routes);
+app.use('/admin', adminRoutes);
 
-
-	const partes = req.url.split('/').filter(Boolean);
-	const recurso = partes[0];
-	const id = partes[1];
-
-	try {
-		switch (recurso) {
-			case 'usuarios':
-				if (req.method === 'GET' && id) return usuarioController.buscar(req, res, enviarJSON, id);
-				if (req.method === 'GET') return usuarioController.listar(req, res, enviarJSON);
-				if (req.method === 'POST') return usuarioController.criar(req, res, enviarJSON, lerCorpo);
-				if (req.method === 'PUT' && id) return usuarioController.atualizar(req, res, enviarJSON, lerCorpo, id);
-				if (req.method === 'DELETE' && id) return usuarioController.remover(req, res, enviarJSON, id);
-				break;
-			case 'produtos':
-				if (req.method === 'GET' && id) return produtoController.buscar(req, res, enviarJSON, id);
-				if (req.method === 'GET') return produtoController.listar(req, res, enviarJSON);
-				if (req.method === 'POST') return produtoController.criar(req, res, enviarJSON, lerCorpo);
-				if (req.method === 'PUT' && id) return produtoController.atualizar(req, res, enviarJSON, lerCorpo, id);
-				if (req.method === 'DELETE' && id) return produtoController.remover(req, res, enviarJSON, id);
-				break;
-			case 'pedidos':
-				if (req.method === 'GET' && id) return pedidoController.buscar(req, res, enviarJSON, id);
-				if (req.method === 'GET') return pedidoController.listar(req, res, enviarJSON);
-				if (req.method === 'POST') return pedidoController.criar(req, res, enviarJSON, lerCorpo);
-				if (req.method === 'PUT' && id) return pedidoController.atualizar(req, res, enviarJSON, lerCorpo, id);
-				if (req.method === 'DELETE' && id) return pedidoController.remover(req, res, enviarJSON, id);
-				break;
-			default:
-				return enviarJSON(res, 404, { erro: 'Rota não encontrada' });
-		}
-		enviarJSON(res, 405, { erro: 'Método não permitido' });
-	} catch (erro) {
-		enviarJSON(res, 500, { erro: erro.message });
-	}
+hbs.registerHelper('json', function (context) {
+	return JSON.stringify(context);
 });
 
-servidor.listen(process.env.PORT || 3000, () => {
-	console.log(`Servidor ouvindo na porta ${process.env.PORT || 3000}`);
-	console.log('Acesse http://localhost:3000 para utilizar o sistema');
+hbs.registerHelper('ifCond', function (v1, v2, options) {
+	return v1 == v2 ? options.fn(this) : options.inverse(this);
+});
+
+hbs.registerPartials(path.join(__dirname, 'views', 'partials'));
+
+app.listen(port, () => {
+	console.log(`Servidor rodando em http://localhost:${port}`);
 });

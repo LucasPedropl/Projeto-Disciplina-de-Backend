@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {{> header title="Usuários" }}
+</head>
+<body>
+    {{> nav }}
+    <div class="container">
+        <h1>Cadastro de Usuário</h1>
+        <form id="form-usuario" method="POST" action="/usuarios{{#if editar}}/editar/{{usuario._id}}{{/if}}">
+            <input type="hidden" name="usuario-id" value="{{usuario._id}}" />
+            <input type="text" name="nome" placeholder="Nome" value="{{usuario.nome}}" required />
+            <input type="email" name="email" placeholder="E-mail" value="{{usuario.email}}" required />
+            <button type="submit">{{#if editar}}Atualizar{{else}}Salvar{{/if}}</button>
+        </form>
+        <h2>Usuários cadastrados</h2>
+        <div id="usuarios">
+            {{#each usuarios}}
+                <div class="card">
+                    <b>ID:</b> {{this._id}}<br>
+                    <b>Nome:</b> {{this.nome}}<br>
+                    <b>Email:</b> {{this.email}}<br>
+                    <form method="GET" action="/usuarios/editar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Editar</button>
+                    </form>
+                    <form method="POST" action="/usuarios/deletar/{{this._id}}" style="display:inline;">
+                        <button type="submit">Excluir</button>
+                    </form>
+                </div>
+            {{else}}
+                <p>Nenhum usuário cadastrado.</p>
+            {{/each}}
+        </div>
+    </div>
+</body>
+</html>
