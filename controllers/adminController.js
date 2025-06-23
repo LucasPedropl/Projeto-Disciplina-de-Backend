@@ -1,5 +1,4 @@
-// filepath: c:\Users\pedro\Downloads\Projeto-Disciplina-de-Backend\controllers\adminController.js
-import { ObjectId } from 'mongodb';
+
 import { criarAdmin } from '../models/admin.js';
 import conectar from '../db/db.js';
 import { logErro } from '../utils/logger.js';

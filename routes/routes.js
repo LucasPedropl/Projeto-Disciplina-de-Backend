@@ -1,4 +1,4 @@
-// filepath: c:\Users\pedro\Downloads\Projeto-Disciplina-de-Backend\routes\routes.js
+
 import express from 'express';
 const router = express.Router();
 

@@ -34,6 +34,11 @@ class ProdutoController {
 			const produto = criarProduto({ nome, preco: Number(preco) });
 			produto.adminId = req.adminId;
 			await db.collection('produtos').insertOne(produto);
+
+			req.session.flash = {
+				tipo: 'sucesso',
+				mensagem: 'Produto cadastrado com sucesso!',
+			};
 			res.redirect('/produtos');
 		} catch (erro) {
 			logErro(erro);
@@ -46,7 +51,7 @@ class ProdutoController {
 		const id = req.params.id;
 		const produto = await db
 			.collection('produtos')
-			.findOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+			.findOne({ _id: new ObjectId(id), adminId: req.adminId }); 
 		if (!produto) return res.status(404).send('Produto não encontrado');
 		res.render('produtos.hbs', { editar: true, produto });
 	}
@@ -59,7 +64,7 @@ class ProdutoController {
 			return res.status(400).send('Dados inválidos');
 		}
 		const result = await db.collection('produtos').updateOne(
-			{ _id: new ObjectId(id), adminId: req.adminId }, // ajuste
+			{ _id: new ObjectId(id), adminId: req.adminId }, 
 			{ $set: { nome, preco: Number(preco) } }
 		);
 		if (result.matchedCount === 0) {
@@ -73,7 +78,7 @@ class ProdutoController {
 		const id = req.params.id;
 		const result = await db
 			.collection('produtos')
-			.deleteOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+			.deleteOne({ _id: new ObjectId(id), adminId: req.adminId }); 
 		if (result.deletedCount === 0) {
 			return res.status(404).send('Produto não encontrado');
 		}

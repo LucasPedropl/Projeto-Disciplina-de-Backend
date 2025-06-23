@@ -32,6 +32,11 @@ class UsuarioController {
 			const usuario = criarUsuario({ nome, email });
 			usuario.adminId = req.adminId;
 			await db.collection('usuarios').insertOne(usuario);
+
+			req.session.flash = {
+				tipo: 'sucesso',
+				mensagem: 'Usuário cadastrado com sucesso!',
+			};
 			res.redirect('/usuarios');
 		} catch (erro) {
 			logErro(erro);

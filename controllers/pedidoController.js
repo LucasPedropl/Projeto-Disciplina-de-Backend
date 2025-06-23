@@ -73,6 +73,11 @@ class PedidoController {
 			const pedido = criarPedido({ idUsuario, itens });
 			pedido.adminId = req.adminId;
 			await db.collection('pedidos').insertOne(pedido);
+
+			req.session.flash = {
+				tipo: 'sucesso',
+				mensagem: 'Pedido cadastrado com sucesso!',
+			};
 			res.redirect('/pedidos');
 		} catch (erro) {
 			logErro(erro);
@@ -85,7 +90,7 @@ class PedidoController {
 		const id = req.params.id;
 		const pedido = await db
 			.collection('pedidos')
-			.findOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+			.findOne({ _id: new ObjectId(id), adminId: req.adminId }); 
 		if (!pedido) return res.status(404).send('Pedido não encontrado');
 		res.render('pedidos.hbs', { editar: true, pedido });
 	}
@@ -98,7 +103,7 @@ class PedidoController {
 			return res.status(400).send('Dados inválidos');
 		}
 		const result = await db.collection('pedidos').updateOne(
-			{ _id: new ObjectId(id), adminId: req.adminId }, // ajuste
+			{ _id: new ObjectId(id), adminId: req.adminId }, 
 			{ $set: { idUsuario, itens } }
 		);
 		if (result.matchedCount === 0) {
@@ -112,7 +117,7 @@ class PedidoController {
 		const id = req.params.id;
 		const result = await db
 			.collection('pedidos')
-			.deleteOne({ _id: new ObjectId(id), adminId: req.adminId }); // ajuste
+			.deleteOne({ _id: new ObjectId(id), adminId: req.adminId }); 
 		if (result.deletedCount === 0) {
 			return res.status(404).send('Pedido não encontrado');
 		}

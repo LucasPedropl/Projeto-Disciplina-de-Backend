@@ -51,6 +51,30 @@
                 <p>Nenhum pedido cadastrado.</p>
             {{/each}}
         </div>
+        {{#if flash}}
+    <div id="flash-message" style="position:fixed;bottom:24px;right:24px;z-index:9999;background:#28a745;color:#fff;padding:16px 32px 20px 32px;box-shadow:0 2px 8px #0002;min-width:220px;position:fixed;">
+        {{flash.mensagem}}
+        <div id="flash-bar" style="
+            position:absolute;
+            left:0; bottom:0;
+            height:4px;
+            background:#008710;
+
+            width:100%;
+            transition:width 3s linear;
+        "></div>
     </div>
+{{/if}}
+<script>
+    setTimeout(function() {
+        var flash = document.getElementById('flash-message');
+        if (flash) flash.style.display = 'none';
+    }, 3000);
+
+    setTimeout(function() {
+        var bar = document.getElementById('flash-bar');
+        if (bar) bar.style.width = '0%';
+    }, 10);
+</script>
 </body>
 </html>
